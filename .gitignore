@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.worktrees/
+.devmesh/
+.env
+.env.*
+.agents/mcp_config.json
+node_modules/
+dist/
+docs/codex-schema/
