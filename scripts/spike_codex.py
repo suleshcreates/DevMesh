@@ -37,26 +37,54 @@ async def discard(stream):
         pass
 
 
+async def wait_for_exit(process, timeout):
+    """Observe exit independently of pipe EOF (descendants may hold the pipes)."""
+    deadline = time.monotonic() + timeout
+    while process.returncode is None:
+        if time.monotonic() >= deadline:
+            raise TimeoutError
+        await asyncio.sleep(.02)
+    return process.returncode
+
+
 async def shutdown(process, stderr_task):
+    """Bound cleanup and always close pipe handles before the Windows loop closes.
+
+asyncio.Process has no public close method. The narrow _transport access below
+uses CPython's verified subprocess transport close(), which closes every pipe.
+Never communicate() again: waiting for inherited pipe EOF can outlive the CLI.
+"""
+    warnings = []
     stderr_task.cancel()
     with suppress(asyncio.CancelledError):
         await stderr_task
-    if process.returncode is None:
-        if os.name == "nt":
-            # Stop our process tree before EOF can orphan launcher children.
-            killer = await asyncio.create_subprocess_exec(
-                "taskkill", "/PID", str(process.pid), "/T", "/F",
-                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-            await asyncio.wait_for(killer.wait(), 5)
-        else:
-            process.terminate()
     try:
-        await asyncio.wait_for(process.communicate(), 5)
-    except TimeoutError:
         if process.returncode is None:
-            process.kill()
-        await asyncio.wait_for(process.communicate(), 5)
-    await asyncio.sleep(.1)
+            if os.name == "nt":
+                killer = None
+                try:
+                    killer = await asyncio.wait_for(asyncio.create_subprocess_exec(
+                        "taskkill", "/PID", str(process.pid), "/T", "/F",
+                        stdout=asyncio.subprocess.DEVNULL,
+                        stderr=asyncio.subprocess.DEVNULL), 2)
+                    await wait_for_exit(killer, 3)
+                finally:
+                    if killer is not None:
+                        killer._transport.close()
+            else:
+                process.terminate()
+    except (TimeoutError, OSError):
+        warnings.append("tree_termination_failed")
+    finally:
+        # This closes handles even when the parent has already exited with 0.
+        process._transport.close()
+        try:
+            await wait_for_exit(process, 2)
+        except TimeoutError:
+            warnings.append("process_exit_timeout")
+        # Let connection_lost callbacks release transports while the loop exists.
+        await asyncio.sleep(.05)
+    return warnings
 
 
 async def app_server(codex: str, timeout: float, thread_id: str | None = None, model: str | None = None) -> dict:
@@ -136,7 +164,7 @@ async def app_server(codex: str, timeout: float, thread_id: str | None = None, m
     except (TimeoutError, EOFError, RuntimeError, ValueError, KeyError) as exc:
         result["failure"] = type(exc).__name__
     finally:
-        await shutdown(process, stderr_task)
+        result["cleanup_warnings"] = await shutdown(process, stderr_task)
     return result
 
 
@@ -171,15 +199,15 @@ async def exec_spike(codex: str, timeout: float, model: str | None = None) -> di
                 result["ack"] = event["item"].get("text", "").strip() == ACK
             if kind == "turn.completed":
                 result["turn_completed"] = True
+                break
         if not result.get("turn_failed"):
-            await asyncio.wait_for(process.wait(), max(.001, deadline - time.monotonic()))
-            result["exit_code"] = process.returncode
+            result["exit_code"] = await wait_for_exit(process, max(.001, deadline - time.monotonic()))
         if process.returncode == 0 and result["ack"] and result.get("turn_completed"):
             result["status"] = "works"
     except (TimeoutError, ValueError) as exc:
         result["failure"] = type(exc).__name__
     finally:
-        await shutdown(process, stderr_task)
+        result["cleanup_warnings"] = await shutdown(process, stderr_task)
     return result
 
 
@@ -192,7 +220,7 @@ async def main(args):
         results.append(await app_server(codex, args.timeout, args.thread_id, args.model))
     if args.method in ("both", "exec"):
         results.append(await exec_spike(codex, args.timeout, args.model))
-    report = {"results": results}
+    report = {"model": args.model, "results": results}
     rendered = json.dumps(report, indent=2)
     print(rendered)
     if args.output:

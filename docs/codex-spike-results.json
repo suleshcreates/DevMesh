@@ -1,42 +1,44 @@
 {
+  "model": "gpt-6-astra",
   "results": [
     {
       "method": "app-server",
-      "status": "partial",
+      "status": "works",
       "events": [
         "remoteControl/status/changed",
         "thread/started",
         "mcpServer/startupStatus/updated",
-        "warning",
         "thread/status/changed",
         "turn/started",
         "item/started",
         "item/completed",
-        "error",
+        "item/agentMessage/delta",
+        "thread/tokenUsage/updated",
+        "account/rateLimits/updated",
         "turn/completed"
       ],
-      "thread_id": "01a13bba-6ca2-70a1-b2e6-051de1c9df52",
-      "ack": false,
-      "streamed": false,
+      "thread_id": "01a13bd5-c6d2-7360-9cef-c5a524cea7a0",
+      "ack": true,
+      "streamed": true,
       "initialized": true,
-      "turn_id": "01a13bba-7349-7f62-9519-da97ac2d622e",
-      "error_category": "model_unavailable",
-      "turn_status": "failed"
+      "turn_id": "01a13bd5-cedb-7c01-8eab-957f823e076d",
+      "turn_status": "completed",
+      "cleanup_warnings": []
     },
     {
       "method": "exec",
-      "status": "partial",
+      "status": "works",
       "events": [
         "thread.started",
-        "item.completed",
         "turn.started",
-        "error",
-        "turn.failed"
+        "item.completed",
+        "turn.completed"
       ],
-      "ack": false,
-      "thread_id": "01a13bba-8615-74d1-9d48-aa42e0f0be51",
-      "error_category": "model_unavailable",
-      "turn_failed": true
+      "ack": true,
+      "thread_id": "01a13bd5-eab9-76b0-a89e-01ebb13c1855",
+      "turn_completed": true,
+      "exit_code": 0,
+      "cleanup_warnings": []
     }
   ]
 }

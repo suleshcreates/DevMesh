@@ -4,18 +4,20 @@ Checked locally on 15 October 2026 (Asia/Calcutta). **Milestone 1 is gated.**
 Only integration spikes are implemented. There is no API server, task queue,
 database, dashboard, deliberation engine, or automated agent execution.
 
-Validation: **12 tests passed in 48.06 seconds** in the staging workspace.
-Both real Codex probes classified the upstream failure as `model_unavailable`.
-The exact upstream text was discarded. Use `--model` to select a model you have
-verified is available in your CLI account, then rerun; no alternative was guessed.
+Validation after the Windows cleanup fix: **15 tests passed in 48.03 seconds**
+in the staging workspace. Both real Codex probes produced ACK using the
+user-verified model `gpt-6-astra`. App-server streamed the response; exec exited
+0. Both returned thread IDs and no cleanup warnings. The earlier CLI default
+`gpt-6.1-sol` was rejected by the ChatGPT-backed CLI connection. Explicitly pass
+`--model gpt-6-astra` when reproducing the successful check.
 
 ## Integration results
 
 | Integration | Result | Evidence | Fallback / next action |
 | --- | --- | --- | --- |
 | Installed Codex CLI | works | `codex --version`: `codex-cli 0.154.0`; root, app-server, exec, and schema-generator help inspected | Recheck flags and regenerate schemas after CLI upgrades |
-| Codex app-server stdio protocol | partial | Initialize, thread/start, turn/start worked and returned thread/turn UUIDs. A real turn reported failed; no ACK or agent-message delta observed. See `codex-spike-results.json` | Repair the reported CLI/service limitation privately and rerun the ACK test. Prefer this method only after ACK succeeds |
-| Codex exec JSONL | partial | Real `thread.started` event returned a thread UUID; the request emitted error/turn.failed without ACK | Available as a candidate fallback, **not yet a proven inference fallback**. Rerun after resolving the failure |
+| Codex app-server stdio protocol | works | Initialize, thread/start, turn/start, agent-message deltas and turn/completed observed. Exact ACK, completed status, thread/turn IDs, clean shutdown. See `codex-spike-results.json` | Preferred connection for M1, with explicit model gpt-6-astra; resume across processes remains unverified |
+| Codex exec JSONL | works | Real thread.started, item.completed and turn.completed events; exact ACK and process exit 0; clean shutdown | Proven one-shot fallback using explicit model gpt-6-astra; exec session resume remains unverified |
 | Official MCP SDK FastMCP stdio | works | MCP 1.30.0; real client initialize/list_tools/ping, 45-second default wait, and repeated calls passed | Pin the tested SDK v1 dependencies; revalidate before migrating to SDK v2 |
 | Antigravity config format and documented locations | partial | Official docs specify `mcpServers` with command/args, a workspace `.agents/mcp_config.json`, and global `~/.gemini/config/mcp_config.json`. Both global and legacy `~/.gemini/antigravity/mcp_config.json` exist here; existence checked only. Antigravity IDE package version 1.107.0 is installed | Use the workspace registration first. Confirm the active path in this installed application's settings; do not infer active config from file existence |
 | Antigravity discovery and tool invocation | unverified | An SDK test client can invoke both tools, but this is not evidence of invocation by Antigravity | Perform the manual test below |
@@ -36,13 +38,19 @@ the venv executable avoids PowerShell execution-policy changes.
 ```powershell
 cd C:\DevMesh
 .\.venv\Scripts\python.exe -m pip install -r requirements-m0.lock.txt
-.\.venv\Scripts\python.exe scripts\spike_codex.py --timeout 45 --output docs\codex-spike-results.json
+.\.venv\Scripts\python.exe scripts\spike_codex.py --model gpt-6-astra --timeout 90 --output docs\codex-spike-results.json
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
 The spike exits 0 only when every selected method returns exactly ACK_CODEX and
 completes successfully. Exit 1 is expected while either connection remains
-partial. Each method has a bounded timeout. No retry loop is used.
+partial. Each method has a bounded timeout. No retry loop is used. Exec stops
+reading protocol output at turn.completed and separately observes process exit;
+it does not wait for stdout EOF, which inherited pipe handles can prevent.
+Shutdown closes subprocess transports while the Windows event loop still runs,
+and reports any bounded cleanup warning without discarding the probe results.
+Regression tests cover an exited parent with a descendant holding stdout/stderr,
+a failed turn, and bounded termination of a hung process.
 
 The desktop filesystem sandbox blocked Windows asyncio's loopback socket pair:
 a diagnostic trace stopped in `socket._fallback_socketpair` / `accept` before
@@ -62,7 +70,7 @@ The script sends these messages in order, waiting for each numbered response:
 ```json
 {"id":1,"method":"initialize","params":{"clientInfo":{"name":"devmesh_spike","version":"0.0.1"}}}
 {"method":"initialized","params":{}}
-{"id":2,"method":"thread/start","params":{"cwd":"C:\\DevMesh","sandbox":"read-only","approvalPolicy":"never"}}
+{"id":2,"method":"thread/start","params":{"cwd":"C:\\DevMesh","sandbox":"read-only","approvalPolicy":"never","model":"gpt-6-astra"}}
 {"id":3,"method":"turn/start","params":{"threadId":"<returned thread UUID>","input":[{"type":"text","text":"Reply with ACK_CODEX. Do not use tools or read any files."}]}}
 ```
 
@@ -71,8 +79,8 @@ configured or fabricated session. Read `result.thread.id` from response 2 and
 `result.turn.id` from response 3. Continue reading notifications while the turn
 runs. Filter by threadId; concatenate `item/agentMessage/delta.params.delta`, and
 capture `item/completed.params.item.text` for an agentMessage. Only a completed
-turn with the exact ACK counts as success. Streaming deltas are supported by
-the generated protocol schema but have **not** been observed successfully here.
+turn with the exact ACK counts as success. Streaming deltas were observed in the
+successful gpt-6-astra probe and are supported by the generated protocol schema.
 
 Persist a thread ID and use `thread/resume` before another `turn/start` to continue
 across app-server processes. The spike offers `--method app-server --thread-id`
@@ -83,7 +91,7 @@ tools, provide authentication tokens or resolve elicitation requests.
 The other command is:
 
 ```powershell
-codex exec --json --sandbox read-only -C C:\DevMesh "Reply with ACK_CODEX. Do not use tools or read any files."
+codex exec --json --sandbox read-only --model gpt-6-astra -C C:\DevMesh "Reply with ACK_CODEX. Do not use tools or read any files."
 ```
 
 Read stdout line by line as JSONL. The observed ID is in
@@ -150,8 +158,8 @@ do not paste their contents into DevMesh, chat or logs.
    depend on the IDE polling forever.
 
 **Do not proceed to Milestone 1 until the human has read this report, tested the
-Antigravity loop, and selected the operating mode. Codex inference must also
-produce ACK before a connector is called proven.**
+Antigravity loop, and selected the operating mode. The Codex ACK gate is now
+satisfied with explicit model gpt-6-astra; the Antigravity gate remains open.**
 
 ## Sources and verification boundary
 
