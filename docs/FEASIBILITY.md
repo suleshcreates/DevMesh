@@ -1,6 +1,7 @@
 # DevMesh Milestone 0 feasibility
 
-Checked locally on 15 October 2026 (Asia/Calcutta). **Milestone 1 is gated.**
+Checked locally on 15 October 2026 (Asia/Calcutta). **The bounded Milestone 0
+integration gate passed based on the user's reported Antigravity manual test.**
 Only integration spikes are implemented. There is no API server, task queue,
 database, dashboard, deliberation engine, or automated agent execution.
 
@@ -20,14 +21,36 @@ user-verified model `gpt-6-astra`. App-server streamed the response; exec exited
 | Codex exec JSONL | works | Real thread.started, item.completed and turn.completed events; exact ACK and process exit 0; clean shutdown | Proven one-shot fallback using explicit model gpt-6-astra; exec session resume remains unverified |
 | Official MCP SDK FastMCP stdio | works | MCP 1.30.0; real client initialize/list_tools/ping, 45-second default wait, and repeated calls passed | Pin the tested SDK v1 dependencies; revalidate before migrating to SDK v2 |
 | Antigravity config format and documented locations | partial | Official docs specify `mcpServers` with command/args, a workspace `.agents/mcp_config.json`, and global `~/.gemini/config/mcp_config.json`. Both global and legacy `~/.gemini/antigravity/mcp_config.json` exist here; existence checked only. Antigravity IDE package version 1.107.0 is installed | Use the workspace registration first. Confirm the active path in this installed application's settings; do not infer active config from file existence |
-| Antigravity discovery and tool invocation | unverified | An SDK test client can invoke both tools, but this is not evidence of invocation by Antigravity | Perform the manual test below |
-| Antigravity autonomous polling loop | unverified | No Antigravity agent loop has been observed in this run | If the agent stops after no_task or its step budget, switch to semi-manual activation and re-paste the prompt. Do not assume an unlimited loop |
+| Antigravity discovery and tool invocation | works (manual, user reported) | User pasted Antigravity's reported MCP ping invocation returning status pong; local cached ping and await_next_task schemas also exist | Recheck actual tool invocation when M1 replaces the spike server |
+| Antigravity bounded polling loop | works (manual, user reported) | User reported exactly 3 MCP await_next_task calls, each returning status no_task, in response to the bounded loop probe | Proceed with cooperative polling and retain human reactivation when the IDE stops. Unlimited polling and longer-running task execution remain unverified |
 
 Safe evidence records only event names, fixed error categories, identifiers and
 ACK booleans. It does not retain raw upstream errors, stderr, tool output,
 credentials or environment values. No credential files were read. Codex children
 inherit the user environment and use their own authentication; no API key was
 provided by these scripts. Do not supply paid API keys to run the spikes.
+
+## Antigravity manual gate evidence
+
+The user supplied these results in this chat on 15 October 2026:
+
+- MCP `ping`: reported actual invocation with `{"status":"pong"}`.
+- MCP `await_next_task`: reported exactly 3 actual MCP calls, all returning
+  `{"status":"no_task"}`, after the prompt requesting three successive calls
+  without asking the human to continue.
+
+This is human-supplied evidence, not a tool trace independently captured by
+Codex. Exact durations, the active Antigravity model, and indefinite polling were
+not verified. The user reported that the working global server entry now points
+to `C:\Users\sules\OneDrive\Desktop\dev_center\DevMesh`.
+Both that staging path and `C:\DevMesh` contain the spike executable and script,
+as checked locally. `C:\DevMesh` contains the committed project history. M1 must
+confirm the active bridge points to its real implementation and retest the
+Antigravity tools; do not silently assume a config path or edit credentials.
+
+The bounded gate is accepted for proceeding to M1. Keep the re-paste/activation
+fallback: this result supports a cooperative polling design, not a guarantee
+that an IDE agent will run indefinitely.
 
 ## Reproduce locally
 
@@ -157,9 +180,10 @@ do not paste their contents into DevMesh, chat or logs.
    The later server would still use durable inbox/ack semantics; it must not
    depend on the IDE polling forever.
 
-**Do not proceed to Milestone 1 until the human has read this report, tested the
-Antigravity loop, and selected the operating mode. The Codex ACK gate is now
-satisfied with explicit model gpt-6-astra; the Antigravity gate remains open.**
+**The user-reported manual results satisfy the bounded Antigravity gate.
+The Codex ACK gate passed with explicit model gpt-6-astra. M1 may proceed in a
+separate chat using cooperative polling with human reactivation as the fallback.
+This chat stops at M0; no server or later milestone has been implemented.**
 
 ## Sources and verification boundary
 
@@ -171,5 +195,6 @@ satisfied with explicit model gpt-6-astra; the Antigravity gate remains open.**
 - [Google Antigravity getting-started codelab](https://codelabs.developers.google.com/getting-started-google-antigravity)
 - [Official MCP SDK v1 documentation](https://py.sdk.modelcontextprotocol.io/v1/)
 
-Native Windows UI control is unavailable in this chat. Therefore the active
-Antigravity config and agent loop are manual checks, not silently assumed passes.
+Native Windows UI control is unavailable in this chat. Antigravity invocation
+and bounded polling are recorded as user-reported manual passes; no independent
+UI/tool-call trace was captured by Codex.
