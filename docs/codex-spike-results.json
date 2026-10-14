@@ -1,0 +1,42 @@
+{
+  "results": [
+    {
+      "method": "app-server",
+      "status": "partial",
+      "events": [
+        "remoteControl/status/changed",
+        "thread/started",
+        "mcpServer/startupStatus/updated",
+        "warning",
+        "thread/status/changed",
+        "turn/started",
+        "item/started",
+        "item/completed",
+        "error",
+        "turn/completed"
+      ],
+      "thread_id": "01a13bba-6ca2-70a1-b2e6-051de1c9df52",
+      "ack": false,
+      "streamed": false,
+      "initialized": true,
+      "turn_id": "01a13bba-7349-7f62-9519-da97ac2d622e",
+      "error_category": "model_unavailable",
+      "turn_status": "failed"
+    },
+    {
+      "method": "exec",
+      "status": "partial",
+      "events": [
+        "thread.started",
+        "item.completed",
+        "turn.started",
+        "error",
+        "turn.failed"
+      ],
+      "ack": false,
+      "thread_id": "01a13bba-8615-74d1-9d48-aa42e0f0be51",
+      "error_category": "model_unavailable",
+      "turn_failed": true
+    }
+  ]
+}

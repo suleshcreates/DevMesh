@@ -1,0 +1,4 @@
+# Official SDK v1 is required for the requested FastMCP interface.
+mcp>=1.20,<2
+pytest>=8,<10
+pytest-asyncio>=0.24,<2
