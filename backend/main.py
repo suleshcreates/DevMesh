@@ -9,6 +9,10 @@ from backend.database import Database
 from backend.models import Agent, MessageCreate, Acknowledgement, poll_timeout
 from backend.ws_manager import WebSocketManager
 
+from backend.decision_engine import DecisionEngine, DecisionError
+from backend.decision_models import Proposal, CritiqueRequest, HumanResolution, MemorySource
+from backend.memory_manager import MemoryManager
+
 ROOT = Path(__file__).resolve().parents[1]
 
 def create_app(db_path=None):
@@ -18,6 +22,10 @@ def create_app(db_path=None):
         app.state.ws = WebSocketManager()
         app.state.changed = asyncio.Condition()
         await app.state.db.open()
+        app.state.decisions = DecisionEngine(app.state.db)
+        await app.state.decisions.initialize()
+        app.state.memory = MemoryManager(app.state.db, app.state.db.path.parent)
+        await app.state.memory.regenerate()
         try:
             yield
         finally:
@@ -32,6 +40,59 @@ def create_app(db_path=None):
 
     async def publish(kind, data, agents):
         await app.state.ws.broadcast({"event": kind, "data": data}, agents)
+
+    @app.exception_handler(DecisionError)
+    async def decision_error(request, exc):
+        return JSONResponse(status_code=exc.code, content={"detail": exc.detail})
+
+    async def mutate_decision(action, request, decision_id=None):
+        async with app.state.changed:
+            data, messages = await app.state.decisions.mutate(action, request, decision_id)
+            app.state.changed.notify_all()
+        for message in messages:
+            await publish("message.created", message, {message["recipient"]})
+        if messages:
+            await publish(messages[0]["subject"], data, {"codex", "antigravity", "human"})
+        if data["state"] == "RECORD":
+            await app.state.memory.regenerate()
+        return data
+
+    @app.post("/api/decisions/propose", status_code=201)
+    async def propose(request: Proposal):
+        return await mutate_decision("propose", request)
+
+    @app.get("/api/decisions")
+    async def decisions(open_only: bool = True):
+        return {"decisions": await app.state.decisions.list(open_only)}
+
+    @app.get("/api/decisions/{decision_id}")
+    async def decision(decision_id: str):
+        return await app.state.decisions.get(decision_id)
+
+    @app.post("/api/decisions/{decision_id}/critique")
+    async def critique(decision_id: str, request: CritiqueRequest):
+        return await mutate_decision("critique", request, decision_id)
+
+    @app.post("/api/decisions/{decision_id}/human-resolve")
+    async def human_resolve(decision_id: str, request: HumanResolution):
+        return await mutate_decision("human", request, decision_id)
+
+    @app.get("/api/context/{doc_name}")
+    async def context(doc_name: str):
+        try:
+            return await app.state.memory.context(doc_name)
+        except ValueError:
+            raise HTTPException(422, "Unsupported document name") from None
+
+    @app.put("/api/context/{doc_name}/source")
+    async def source(doc_name: str, request: MemorySource):
+        try:
+            await app.state.memory.set_source(doc_name, request.content)
+            result = await app.state.memory.context(doc_name)
+            await publish("memory.source_updated", result, {"codex", "antigravity", "human"})
+            return result
+        except ValueError:
+            raise HTTPException(422, "Unsupported source document") from None
 
     @app.post("/api/messages", status_code=201)
     async def send_message(request: MessageCreate):

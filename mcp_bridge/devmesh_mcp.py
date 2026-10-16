@@ -68,5 +68,33 @@ async def submit_review(sender: Agent, recipient: Agent, conversation_id: str,
                             subject=subject, content=content, conversation_id=conversation_id)
     return await request("POST", "/api/messages", payload=message.model_dump(mode="json"))
 
+@mcp.tool()
+async def list_open_decisions() -> dict:
+    return await request("GET", "/api/decisions")
+
+@mcp.tool()
+async def submit_decision_proposal(request_id: str, agent: str, title: str,
+                                   content: str, rationale: str) -> dict:
+    from backend.decision_models import Proposal
+    body = Proposal(request_id=request_id, agent=agent, title=title, content=content, rationale=rationale)
+    return await request("POST", "/api/decisions/propose", payload=body.model_dump())
+
+@mcp.tool()
+async def submit_critique(decision_id: str, request_id: str, agent: str,
+                          expected_revision: int, critique_json: str) -> dict:
+    import re
+    from backend.decision_models import CritiqueRequest
+    if not re.fullmatch(r"DEC-[0-9]+", decision_id):
+        raise ValueError("Invalid decision ID")
+    body = CritiqueRequest(request_id=request_id, agent=agent,
+                          expected_revision=expected_revision, critique_json=critique_json)
+    return await request("POST", f"/api/decisions/{decision_id}/critique", payload=body.model_dump())
+
+@mcp.tool()
+async def get_project_context(doc_name: str) -> dict:
+    from backend.memory_manager import validate_name
+    validate_name(doc_name)
+    return await request("GET", f"/api/context/{doc_name}")
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
