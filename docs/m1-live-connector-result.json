@@ -1,0 +1,26 @@
+{
+  "model": "gpt-6-astra",
+  "checks": [
+    {
+      "check": "inference",
+      "method": "app-server",
+      "thread_id": "01a14438-cdf6-7d00-a347-becbe11b6479",
+      "turn_id": "01a14438-dc2e-7092-8a12-1b5df2ceb7b7",
+      "ack": true,
+      "streamed": true,
+      "cleanup_warnings": []
+    },
+    {
+      "check": "cross_process_resume",
+      "method": "app-server",
+      "thread_id": "01a14438-cdf6-7d00-a347-becbe11b6479",
+      "turn_id": "01a14439-2e9a-78c3-a917-131bd51ed27c",
+      "same_thread": true,
+      "different_turn": true,
+      "remembered_marker": true,
+      "streamed": true,
+      "cleanup_warnings": []
+    }
+  ],
+  "passed": true
+}

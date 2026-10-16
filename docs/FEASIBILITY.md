@@ -212,3 +212,16 @@ Real Antigravity M1 invocation, real connector inference/resume and indefinite
 polling remain unverified. Human reactivation remains required when polling stops.
 The connector reuses the M0 framing/flags and shutdown implementation; the
 committed ThreadResumeParams schema verifies the optional resume parameters.
+
+## Manual and live verification follow-up (16 October 2026)
+
+See [MILESTONE1_VERIFICATION.md](MILESTONE1_VERIFICATION.md) for the latest
+verification status, superseding earlier unverified M1 integration notes.
+The user supplied passing Antigravity MCP results for restart persistence,
+pending-message polling, explicit acknowledgement, three timed empty polls,
+and a review delivered to Codex's inbox. Codex directly verified real connector
+inference and cross-process resume with remembered context using gpt-6-astra;
+both turns streamed with no cleanup warnings. The review was not acknowledged.
+Indefinite polling remains unverified. Broad redaction masked ordinary
+delivered=false prose in the review, as detailed in the verification note.
+No later milestone was implemented.
