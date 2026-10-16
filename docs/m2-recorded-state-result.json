@@ -1,0 +1,42 @@
+{
+  "source": "direct_local_rest_and_generated_files",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "state": "RECORD",
+      "status": "agreed",
+      "revision": 3,
+      "round_count": 2,
+      "has_human_resolution": false,
+      "passed": true
+    },
+    {
+      "id": "DEC-002",
+      "state": "RECORD",
+      "status": "human_resolved",
+      "revision": 5,
+      "round_count": 3,
+      "has_human_resolution": true,
+      "passed": true
+    }
+  ],
+  "documents": [
+    {
+      "doc_name": "DECISIONS.md",
+      "generated": true,
+      "has_both_decisions": true,
+      "has_human_directive": true,
+      "file_matches_db_context": true,
+      "passed": true
+    },
+    {
+      "doc_name": "ARCHITECTURE.md",
+      "generated": true,
+      "has_both_decisions": true,
+      "has_human_directive": true,
+      "file_matches_db_context": true,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

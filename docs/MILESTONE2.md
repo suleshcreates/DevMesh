@@ -223,3 +223,16 @@ reactivation. No frontend, worktree, task execution/planner, destructive-command
 gate, review/merge runner, orchestration or deployment was implemented.
 
 Final automated verification (16 October 2026): **69 passed in 54.24 seconds**, including all 48 existing tests and 21 new tests. One existing Starlette/httpx TestClient deprecation warning remains. pip check found no broken requirements; git diff --check passed. No real agents were called.
+
+## Manual verification follow-up (16 October 2026)
+
+See [MILESTONE2_VERIFICATION.md](MILESTONE2_VERIFICATION.md) for evidence and
+verification boundaries, superseding earlier notes that the M2 manual workflow
+was unverified. User-supplied results passed M2 MCP discovery/context, DEC-001
+two-round peer agreement, DEC-002 three-round human escalation, the human inbox
+notification, explicit operator resolution, and regenerated decision/architecture
+memory. Direct local API and file checks confirmed both final records and exact
+agreement between generated Markdown and DB-derived context. The API restart
+itself was not independently observed by Codex. Automated coverage remains the
+reported 69 passing tests; the suite was not rerun for this documentation update.
+No later milestone was implemented.
