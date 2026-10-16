@@ -198,3 +198,17 @@ This chat stops at M0; no server or later milestone has been implemented.**
 Native Windows UI control is unavailable in this chat. Antigravity invocation
 and bounded polling are recorded as user-reported manual passes; no independent
 UI/tool-call trace was captured by Codex.
+
+## Milestone 1 implementation update (16 October 2026)
+
+Milestone 1 now implements durable SQLite WAL messaging, explicit delivery
+acknowledgements, REST long-polling, redacted WebSocket notifications, the official
+FastMCP stdio bridge, and a bounded Codex connector. See MILESTONE1.md for exact
+startup commands, manual registration replacement, semantics and verification.
+The M0 conclusions above remain historical evidence; they are not M1 manual
+integration results. The staging registration was not inspected or modified.
+M1 must be registered manually against C:\DevMesh\mcp_bridge\devmesh_mcp.py.
+Real Antigravity M1 invocation, real connector inference/resume and indefinite
+polling remain unverified. Human reactivation remains required when polling stops.
+The connector reuses the M0 framing/flags and shutdown implementation; the
+committed ThreadResumeParams schema verifies the optional resume parameters.
