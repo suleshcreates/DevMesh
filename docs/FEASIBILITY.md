@@ -250,3 +250,15 @@ is isolated on milestone-3 and does not merge prerequisite feature history.
 The worktree controls are cooperative, the local identity boundary remains
 unauthenticated, and real two-agent M3 execution/indefinite polling remain
 unverified. No frontend or autonomous scheduler/orchestrator is included.
+
+## Operator lab verification follow-up (20 October 2026)
+
+See [MILESTONE3_MANUAL_VERIFICATION.md](MILESTONE3_MANUAL_VERIFICATION.md).
+The user completed the disposable lab workflow: task/worktree creation,
+commit-bound operator-simulated peer review, pending-approval HTTP 409 with main
+unchanged, explicit exact-action approval, passing-test promotion and identical
+request replay. Independent read-only task/approval/audit and Git checks confirmed
+one allowed execution, one outcome and one completion, with real DevMesh main
+unchanged. This is not a real two-agent M3 session or a new automated-suite run.
+The reported suite remains 117 passing tests. No M4 frontend or M5 orchestration
+was implemented in this follow-up; existing safety limits remain applicable.

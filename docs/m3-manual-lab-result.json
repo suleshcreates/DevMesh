@@ -1,0 +1,24 @@
+{
+  "source": "direct_read_only_lab_http_and_git",
+  "task_id": "TASK-001",
+  "status": "complete",
+  "revision": 8,
+  "retry_count": 0,
+  "tool_calls": 6,
+  "reviewed_commit": "d70422e01d22007a14c8674cf580fb99100800f8",
+  "disposable_main": "4bfc66542e94026b5c6ef602aab33228c3e61c78",
+  "real_devmesh_main": "b302df01e3b9d4f8dc30515958a7b50f4828e8ef",
+  "approval_state": "consumed",
+  "audit_events": [
+    "pending",
+    "execution_attempt",
+    "approved",
+    "execution_attempt",
+    "execution_outcome"
+  ],
+  "allowed_execution_attempts": 1,
+  "blocked_execution_attempts": 1,
+  "execution_outcomes": 1,
+  "completion_history_entries": 1,
+  "passed": true
+}
