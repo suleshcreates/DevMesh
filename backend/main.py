@@ -15,7 +15,7 @@ from backend.memory_manager import MemoryManager
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def create_app(db_path=None):
+def create_app(db_path=None, repository=None, test_command=None):
     @asynccontextmanager
     async def lifespan(app):
         app.state.db = Database(db_path or ROOT / ".devmesh" / "devmesh.sqlite3")
@@ -24,6 +24,15 @@ def create_app(db_path=None):
         await app.state.db.open()
         app.state.decisions = DecisionEngine(app.state.db)
         await app.state.decisions.initialize()
+        from backend.task_planner import TaskPlanner
+        from backend.security_guard import ApprovalGuard
+        from backend.review_runner import ReviewRunner
+        app.state.tasks = TaskPlanner(app.state.db)
+        await app.state.tasks.initialize()
+        app.state.guard = ApprovalGuard(app.state.db)
+        await app.state.guard.initialize()
+        app.state.runner = ReviewRunner(app.state.tasks, app.state.guard, repository or ROOT, test_command)
+        await app.state.runner.recover()
         app.state.memory = MemoryManager(app.state.db, app.state.db.path.parent)
         await app.state.memory.regenerate()
         try:
@@ -159,9 +168,15 @@ def create_app(db_path=None):
     async def agent_socket(socket: WebSocket, agent: Agent):
         await socket_loop(socket, agent)
 
+    from backend.task_routes import register
+    register(app)
     return app
 
-app = create_app()
+import os
+import json
+app = create_app(db_path=os.environ.get('DEVMESH_DATABASE'),
+                 repository=os.environ.get('DEVMESH_EXECUTION_REPOSITORY'),
+                 test_command=json.loads(os.environ['DEVMESH_TEST_COMMAND']) if os.environ.get('DEVMESH_TEST_COMMAND') else None)
 
 if __name__ == "__main__":
     import uvicorn

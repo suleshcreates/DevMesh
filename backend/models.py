@@ -10,7 +10,7 @@ class MessageCreate(BaseModel):
     conversation_id: UUID | None = None
     sender: Agent
     recipient: Agent
-    type: Literal["message", "proposal", "review"] = "message"
+    type: Literal["message", "proposal", "review", "code_review"] = "message"
     subject: str = Field(default="", max_length=500)
     content: str = Field(min_length=1, max_length=100000)
     requires_response: bool = False

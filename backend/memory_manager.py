@@ -34,7 +34,13 @@ class MemoryManager:
             source = await (await self.db.connection.execute('SELECT content FROM memory_sources WHERE name=?', (name,))).fetchone()
         text = f'# {name[:-3].replace("_", " ")}\n\nGenerated from SQLite; edits are not imported.\n\n'
         if name == 'TASKS.md':
-            return text + 'No task planning exists in Milestone 2.\n'
+            from backend.task_planner import unpack
+            async with self.db.lock:
+                exists = await (await self.db.connection.execute("SELECT name FROM sqlite_master WHERE name='tasks'")).fetchone()
+                tasks = await (await self.db.connection.execute('SELECT * FROM tasks ORDER BY id')).fetchall() if exists else []
+            if not tasks:
+                return text + 'No task planning records exist.\n'
+            return redact(text + '\n'.join(json.dumps(unpack(r), indent=2) for r in tasks) + '\n')
         text += (source[0] if source else 'No source content recorded.') + '\n'
         if name in ('DECISIONS.md', 'ARCHITECTURE.md'):
             decisions = [json.loads(r[0]) for r in rows]

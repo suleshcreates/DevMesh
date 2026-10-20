@@ -96,5 +96,15 @@ async def get_project_context(doc_name: str) -> dict:
     validate_name(doc_name)
     return await request("GET", f"/api/context/{doc_name}")
 
+@mcp.tool()
+async def update_task_status(task_id: str, request_id: str, agent: str,
+                             expected_revision: int, status: str) -> dict:
+    import re
+    from backend.task_models import TaskStatus
+    if not re.fullmatch(r"TASK-[0-9]+", task_id):
+        raise ValueError("Invalid task ID")
+    body = TaskStatus(request_id=request_id, agent=agent, expected_revision=expected_revision, status=status)
+    return await request("POST", f"/api/tasks/{task_id}/status", payload=body.model_dump())
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")

@@ -238,3 +238,15 @@ agreement between generated Markdown and DB-derived context. The API restart
 itself was not independently observed by Codex. Automated coverage remains the
 reported 69 passing tests; the suite was not rerun for this documentation update.
 No later milestone was implemented.
+
+## Milestone 3 implementation follow-up (20 October 2026)
+
+Milestone 3 adds persisted tasks, isolated task worktrees, structured peer review,
+exact-action local operator approval/audit records, and tested candidate promotion
+controls. See MILESTONE3.md for schemas, startup and disposable lab commands;
+MILESTONE3_VERIFICATION.md records automated and loopback smoke evidence and
+remaining limits. Real main remains at its pre-M1/M2 baseline; this implementation
+is isolated on milestone-3 and does not merge prerequisite feature history.
+The worktree controls are cooperative, the local identity boundary remains
+unauthenticated, and real two-agent M3 execution/indefinite polling remain
+unverified. No frontend or autonomous scheduler/orchestrator is included.
