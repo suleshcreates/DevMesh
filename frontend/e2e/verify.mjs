@@ -5,6 +5,7 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import assert from "node:assert/strict";
+const evidencePrefix = process.env.DEVMESH_BROWSER_EVIDENCE_PREFIX || "m4";
 const root = path.resolve(import.meta.dirname, "../.."),
   python = path.join(root, ".venv/Scripts/python.exe");
 const temp = await mkdtemp(path.join(tmpdir(), "devmesh-m4-browser-"));
@@ -143,7 +144,7 @@ try {
     );
     await page.evaluate(() => document.activeElement?.blur());
     await page.screenshot({
-      path: path.join(root, "docs/m4-mobile.png"),
+      path: path.join(root, `docs/${evidencePrefix}-mobile.png`),
       fullPage: true,
     });
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -256,7 +257,7 @@ try {
         document.activeElement?.blur();
         window.scrollTo(0, 0);
       });
-      await page.screenshot({ path: path.join(root, "docs/m4-desktop.png") });
+      await page.screenshot({ path: path.join(root, `docs/${evidencePrefix}-desktop.png`) });
     },
   );
   await check(
@@ -481,7 +482,7 @@ try {
     assert.deepEqual(errors, []),
   );
   await writeFile(
-    path.join(root, "docs/m4-browser-results.json"),
+    path.join(root, `docs/${evidencePrefix}-browser-results.json`),
     JSON.stringify(
       {
         browser: "Microsoft Edge via Playwright, headless",

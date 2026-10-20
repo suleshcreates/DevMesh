@@ -106,5 +106,26 @@ async def update_task_status(task_id: str, request_id: str, agent: str,
     body = TaskStatus(request_id=request_id, agent=agent, expected_revision=expected_revision, status=status)
     return await request("POST", f"/api/tasks/{task_id}/status", payload=body.model_dump())
 
+
+@mcp.tool()
+async def get_assignment_context(project_id: UUID, correlation_id: UUID, agent: str, request_id: UUID | None = None) -> dict:
+    if agent not in ('codex', 'antigravity'):
+        raise ValueError('Invalid agent')
+    return await request('GET', f'/api/projects/{project_id}/assignments/{correlation_id}', params={'agent': agent, **({'request_id': str(request_id)} if request_id else {})})
+
+@mcp.tool()
+async def report_project_result(project_id: UUID, report: dict) -> dict:
+    """Structured analysis/critique/plan/execution/review. Review uses protected M3 feedback, never M1 submit_review."""
+    from backend.project_models import AgentReport
+    body = AgentReport.model_validate(report)
+    return await request('POST', f'/api/projects/{project_id}/reports', payload=body.model_dump())
+
+@mcp.tool()
+async def report_project_usage(project_id: UUID, report: dict) -> dict:
+    """Deduplicated observable tool IDs, progress, errors and stalls; never resets budgets."""
+    from backend.project_models import Usage
+    body = Usage.model_validate(report)
+    return await request('POST', f'/api/projects/{project_id}/usage', payload=body.model_dump())
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")

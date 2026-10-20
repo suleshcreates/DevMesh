@@ -1,0 +1,17 @@
+{
+  "browser": "Microsoft Edge via Playwright, headless",
+  "fixture_directory": "C:\\Users\\sules\\AppData\\Local\\Temp\\devmesh-m4-browser-2Njr3w",
+  "results": [
+    "Honest empty states and unknown heartbeats",
+    "Keyboard focus and mobile viewport",
+    "Clipboard contains supported bounded bridge instructions",
+    "Persisted message, safe Markdown, heartbeat, decision, task and exact action render",
+    "Explicit exact-action decision binds request and fingerprint; no execution",
+    "Human resolution selects actual fourth proposal and records human_resolved",
+    "Failed human submission preserves text and retries identical request ID only",
+    "Denied and consumed requests cannot be reused; persisted integration log is visible",
+    "API disconnected state and WebSocket reconnect rehydrate persisted state",
+    "No unexpected browser console errors"
+  ],
+  "unexpected_errors": []
+}

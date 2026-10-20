@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-20",
+  "timezone": "Asia/Calcutta",
+  "branch": "milestone-5",
+  "base_commit": "60633ba",
+  "backend": {
+    "passed": 147,
+    "seconds": 287.49,
+    "existing_regressions": 119,
+    "m5_cases": 26,
+    "protocol_observer_cases": 2,
+    "warnings": [
+      "Existing Starlette/httpx TestClient deprecation"
+    ]
+  },
+  "python_dependencies": "No broken requirements found",
+  "frontend": {
+    "tests_passed": 3,
+    "build": "passed",
+    "typescript_errors": 0
+  },
+  "edge": {
+    "m5_scenarios": 7,
+    "m4_regression_scenarios": 10,
+    "m5_page_errors": 0
+  },
+  "launcher": [
+    "PowerShell syntax",
+    "occupied-port refusal",
+    "normal startup ignores lab overrides",
+    "native argv with spaced script path"
+  ],
+  "real_main": "b302df01e3b9d4f8dc30515958a7b50f4828e8ef",
+  "boundaries": [
+    "Fake inference only for automated checks; actual disposable Git/test/promotion gates",
+    "Production automatic editing disabled; explicit manual handoff",
+    "Real-agent M5 and indefinite Antigravity polling unverified",
+    "Cold bootstrap and full normal launcher with user-confirmed MCP path unverified",
+    "No deployment or real main merge"
+  ]
+}

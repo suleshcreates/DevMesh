@@ -1,0 +1,51 @@
+{
+  "cli_version": "0.154.0",
+  "source": "v2/ItemStartedNotification.json",
+  "notification_required": [
+    "item",
+    "startedAtMs",
+    "threadId",
+    "turnId"
+  ],
+  "item_types": [
+    "userMessage",
+    "hookPrompt",
+    "agentMessage",
+    "functionCallOutput",
+    "plan",
+    "reasoning",
+    "commandExecution",
+    "fileChange",
+    "mcpToolCall",
+    "dynamicToolCall",
+    "collabAgentToolCall",
+    "subAgentActivity",
+    "webSearch",
+    "imageView",
+    "sleep",
+    "imageGeneration",
+    "enteredReviewMode",
+    "exitedReviewMode",
+    "contextCompaction"
+  ],
+  "turn_read_only_policy": {
+    "properties": {
+      "networkAccess": {
+        "default": false,
+        "type": "boolean"
+      },
+      "type": {
+        "enum": [
+          "readOnly"
+        ],
+        "title": "ReadOnlySandboxPolicyType",
+        "type": "string"
+      }
+    },
+    "required": [
+      "type"
+    ],
+    "title": "ReadOnlySandboxPolicy",
+    "type": "object"
+  }
+}

@@ -163,3 +163,29 @@ async def test_exec_failed_turn_is_safe():
         await CodexAppServerClient(spawn=spawn).send_prompt("plan")
     assert str(error.value) == "exec_failed"
     assert len(calls) == 2 and process.closed
+
+async def test_observable_protocol_tools_are_deduplicated_and_scoped():
+    data = events()
+    tool = {'threadId': 'thread', 'turnId': 'turn', 'item': {'id': 'tool-1', 'type': 'commandExecution'}}
+    ignored = {'threadId': 'other-thread', 'turnId': 'turn', 'item': {'id': 'tool-other', 'type': 'mcpToolCall'}}
+    data[3:3] = [{'method': 'item/started', 'params': tool}, {'method': 'item/completed', 'params': tool}, {'method': 'item/started', 'params': ignored}]
+    process = Process(data)
+    async def spawn(*args, **kwargs): return process
+    observed = []
+    async def observe(event): observed.append(event)
+    await CodexAppServerClient(spawn=spawn, on_tool=observe).send_prompt('Read-only review')
+    assert observed == [{'thread_id': 'thread', 'turn_id': 'turn', 'item_id': 'tool-1', 'type': 'commandExecution'}]
+    assert process.sent[2]['params']['sandbox'] == 'read-only'
+    assert process.sent[2]['params']['approvalPolicy'] == 'never'
+
+
+async def test_observable_tool_budget_abort_has_no_exec_fallback():
+    data = events()
+    data.insert(3, {'method': 'item/started', 'params': {'threadId': 'thread', 'turnId': 'turn', 'item': {'id': 'tool-1', 'type': 'mcpToolCall'}}})
+    process = Process(data)
+    calls = []
+    async def spawn(*args, **kwargs): calls.append(args); return process
+    async def stop(event): raise ConnectorError('tool_budget_exhausted', True)
+    with pytest.raises(ConnectorError):
+        await CodexAppServerClient(spawn=spawn, on_tool=stop).send_prompt('Read-only review')
+    assert len(calls) == 1 and process.closed

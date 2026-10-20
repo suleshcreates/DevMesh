@@ -77,12 +77,12 @@ class TaskPlanner:
         values = [json.dumps(task[k]) if k in JSON_FIELDS else task[k] for k in FIELDS]
         await c.execute(f"INSERT OR REPLACE INTO tasks ({','.join(FIELDS)}) VALUES ({','.join('?' for _ in FIELDS)})", values)
 
-    async def message(self, c, recipient, subject, payload, sender='human', kind='message'):
+    async def message(self, c, recipient, subject, payload, sender='human', kind='message', requires_response=True):
         ident, conversation = str(uuid4()), str(uuid4())
         await c.execute('INSERT INTO conversations VALUES (?,?)', (conversation, now()))
         await c.execute('INSERT INTO messages VALUES (?,?,?,?,?,?,?,?,?,?)',
                         (ident, conversation, sender, recipient, kind, subject,
-                         json.dumps(redact(payload)), 1, 0, now()))
+                         json.dumps(redact(payload)), int(requires_response), 0, now()))
         return ident
 
     async def dependencies_ready(self, c, task):

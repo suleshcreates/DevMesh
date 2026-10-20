@@ -48,6 +48,7 @@ export type Task = {
   worktree_path: string | null;
   review_feedback: unknown[];
   retry_count: number;
+  tool_calls: number;
   review: unknown;
   history: unknown[];
 };
@@ -80,6 +81,7 @@ export type Data = Snapshot & {
   decisions: Decision[];
   tasks: Task[];
   approvals: Approval[];
+  projects: Project[];
 };
 export function heartbeat(lastSeen: string | undefined, now = Date.now()) {
   if (!lastSeen || !Number.isFinite(Date.parse(lastSeen))) return "Unknown";
@@ -107,3 +109,26 @@ export function testGate(attempts: Attempt[]) {
   ).length;
   return `${passed}/${attempts.length} promoted`;
 }
+
+export type Project = {
+  id: string;
+  goal: string;
+  repository: string;
+  state: string;
+  revision: number;
+  execution_mode: string;
+  reason: string | null;
+  memory: { version: string } | null;
+  progress: { complete: number; required: number };
+  tasks: unknown[];
+  attempts: unknown;
+  jobs: {
+    id: string;
+    agent: string;
+    phase: string;
+    status: string;
+    task_id: string | null;
+    commit: string | null;
+    context: unknown;
+  }[];
+};

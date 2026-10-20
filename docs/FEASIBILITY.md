@@ -274,3 +274,27 @@ trace. This supplements the earlier unperformed normal-backend manual check.
 No real approvals, decision resolutions or integrations were executed through
 the UI in this follow-up. Existing automated evidence remains separate; checks
 were not rerun for this documentation-only update. No M5 implementation was added.
+
+## Milestone 5 implementation follow-up (20 October 2026)
+
+Milestone 5 adds a persisted single-project lifecycle, correlated durable agent
+assignments/results, independent analyses with existing M2 cross-critique, locked
+memory/task versions, dependency-ordered M3 worktrees, opposite-agent exact-commit
+reviews, exact-action operator approvals and existing guarded integration. The
+dashboard now starts and controls real persisted projects. See MILESTONE5.md for
+contracts, Windows startup, activation, disposable lab and verification results.
+
+Installed codex-cli 0.154.0 help and generated schemas were rechecked. Read-only
+turn policy and observable tool identifiers are recorded in
+protocol/M5ObservableTools.json. Additional production automatic editing remains
+fail-closed: the available interfaces do not establish enforcement of every
+file-scope/destructive-command/operator-approval boundary for arbitrary IDE tools.
+A concrete manual worktree/commit handoff is exposed instead. Worktrees and
+instructions are not OS isolation; independent IDE tools may be unobservable.
+
+Automated adapters and browser fixtures are separate from real-agent evidence.
+They create actual disposable commits and run actual test/promotion gates, but
+cannot establish a real Codex/Antigravity M5 end-to-end pass. Real M5 inference,
+peer review/execution and indefinite polling remain manual/unverified. Keep the
+human reactivation fallback. Real DevMesh main is not an execution demonstration
+target and remains unmerged. No credential-bearing config contents were read.

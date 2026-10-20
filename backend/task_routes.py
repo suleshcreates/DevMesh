@@ -8,19 +8,37 @@ def register(app):
     async def git_error(request, exc):
         return JSONResponse(status_code=409, content={'detail': str(exc)})
 
-    async def mutate(callback):
-        async with app.state.runner.lock:
-            try:
-                return await callback()
-            finally:
-                # Overlap/recovery can commit a blocked task before rejecting a request.
-                await app.state.memory.context('TASKS.md')
-                async with app.state.changed:
-                    app.state.changed.notify_all()
+    async def legacy_mutation():
+        from backend.task_planner import fail
+        if await app.state.orchestrator.list():
+            fail('Project-owned tasks must use correlated project lifecycle contracts')
+
+    async def execution_target():
+        from backend.task_planner import fail
+        if not app.state.execution_selected and not await app.state.orchestrator.list():
+            fail('Explicitly select an execution repository; DevMesh is not a default execution target')
+
+    async def mutate(callback, write=False):
+        async def run():
+            async with app.state.runner.lock:
+                try:
+                    return await callback()
+                finally:
+                    # Recovery/overlap may persist a blocked task before rejection.
+                    await app.state.memory.context('TASKS.md')
+                    async with app.state.changed:
+                        app.state.changed.notify_all()
+        if write:
+            # Serialize legacy writes with project start, closing the check/start race.
+            async with app.state.orchestrator.lock:
+                await legacy_mutation()
+                return await run()
+        return await run()
 
     @app.post('/api/tasks', status_code=201)
     async def create(request: TaskCreate):
-        return await mutate(lambda: app.state.tasks.create(request))
+        await legacy_mutation()
+        return await mutate(lambda: app.state.tasks.create(request), write=True)
 
     @app.get('/api/tasks')
     async def tasks():
@@ -37,23 +55,29 @@ def register(app):
 
     @app.post('/api/tasks/{task_id}/status')
     async def status(task_id: str, request: TaskStatus):
-        return await mutate(lambda: app.state.tasks.update(task_id, request))
+        await legacy_mutation()
+        return await mutate(lambda: app.state.tasks.update(task_id, request), write=True)
 
     @app.post('/api/tasks/{task_id}/workspace')
     async def workspace(task_id: str, request: Request):
-        return await mutate(lambda: app.state.runner.workspace_for(task_id, request.request_id))
+        await legacy_mutation()
+        await execution_target()
+        return await mutate(lambda: app.state.runner.workspace_for(task_id, request.request_id), write=True)
 
     @app.post('/api/tasks/{task_id}/review')
     async def review(task_id: str, request: Request):
-        return await mutate(lambda: app.state.runner.review_ready(task_id, request.request_id))
+        await legacy_mutation()
+        return await mutate(lambda: app.state.runner.review_ready(task_id, request.request_id), write=True)
 
     @app.post('/api/tasks/{task_id}/feedback')
     async def feedback(task_id: str, request: ReviewFeedback):
-        return await mutate(lambda: app.state.runner.feedback(task_id, request))
+        await legacy_mutation()
+        return await mutate(lambda: app.state.runner.feedback(task_id, request), write=True)
 
     @app.post('/api/tasks/{task_id}/api-contract-challenge')
     async def challenge(task_id: str, request: Challenge):
-        return await mutate(lambda: app.state.tasks.challenge(task_id, request))
+        await legacy_mutation()
+        return await mutate(lambda: app.state.tasks.challenge(task_id, request), write=True)
 
     @app.post('/api/tasks/{task_id}/integration-action')
     async def integration_action(task_id: str, request: Request):
@@ -61,7 +85,9 @@ def register(app):
 
     @app.post('/api/tasks/{task_id}/integrate')
     async def integrate(task_id: str, request: Integration):
-        return await mutate(lambda: app.state.runner.integrate(task_id, request.request_id, request.approval_id))
+        await legacy_mutation()
+        await execution_target()
+        return await mutate(lambda: app.state.runner.integrate(task_id, request.request_id, request.approval_id), write=True)
 
     @app.post('/api/approvals', status_code=201)
     async def approval(request: Action):

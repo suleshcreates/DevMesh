@@ -41,6 +41,22 @@ class MemoryManager:
             if not tasks:
                 return text + 'No task planning records exist.\n'
             return redact(text + '\n'.join(json.dumps(unpack(r), indent=2) for r in tasks) + '\n')
+        # M5 locks project-specific requirements without importing older M2 project records.
+        async with self.db.lock:
+            exists = await (await self.db.connection.execute("SELECT name FROM sqlite_master WHERE name='projects'")).fetchone()
+            project = await (await self.db.connection.execute('SELECT document FROM projects LIMIT 1')).fetchone() if exists else None
+        project = json.loads(project[0]) if project else None
+        if project and project.get('memory'):
+            memory = project['memory']
+            if name in ('PROJECT_SPEC.md', 'ARCHITECTURE.md', 'DECISIONS.md', 'API_CONTRACT.md'):
+                return redact(text + 'Locked memory version: ' + memory['version'] + '\n\n' + json.dumps(memory['content'], indent=2) + '\n')
+        if project:
+            if name == 'PROJECT_SPEC.md':
+                return redact(text + project['goal'] + '\n\nDesign memory has not been locked. Use the assigned analysis context.\n')
+            if name in ('ARCHITECTURE.md', 'DECISIONS.md', 'API_CONTRACT.md'):
+                current = [json.loads(r[0]) for r in rows if json.loads(r[0])['id'] in project.get('decision_ids', [])]
+                return redact(text + 'Project design is not locked. Historical project records are excluded.\n' + json.dumps(current, indent=2) + '\n')
+            return redact(text + (project.get('reason') or 'No project-specific issues recorded.') + '\n')
         text += (source[0] if source else 'No source content recorded.') + '\n'
         if name in ('DECISIONS.md', 'ARCHITECTURE.md'):
             decisions = [json.loads(r[0]) for r in rows]

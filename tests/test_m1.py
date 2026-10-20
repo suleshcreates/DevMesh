@@ -186,7 +186,7 @@ async def test_bridge_stdio_discovery_and_safe_validation():
                 names = {tool.name for tool in (await session.list_tools()).tools}
                 assert names == {"send_agent_message", "read_agent_inbox", "await_next_task",
                                  "acknowledge_message", "submit_proposal", "submit_review",
-                                 "list_open_decisions", "submit_decision_proposal", "submit_critique", "get_project_context", "update_task_status"}
+                                 "list_open_decisions", "submit_decision_proposal", "submit_critique", "get_project_context", "update_task_status", "get_assignment_context", "report_project_result", "report_project_usage"}
                 result = await session.call_tool("send_agent_message",
                     {"sender": SECRET, "recipient": "antigravity", "content": SECRET})
                 assert result.isError

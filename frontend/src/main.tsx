@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import Markdown from "react-markdown";
 import { Network } from "./Network";
+import { ProjectControls } from "./ProjectControls";
 import { useDashboard, request } from "./api";
 import {
   heartbeat,
@@ -332,7 +333,9 @@ function ActionForm({
         `/api/approvals/${id}/decision`,
         { fingerprint, decision, reason },
       );
-      setNotice(`Recorded ${result.state}. No integration was executed.`);
+      setNotice(
+        `Recorded ${result.state}. Orchestration may now run an approved exact action.`,
+      );
     } catch (e) {
       setNotice(
         `${String(e)}. Outcome may be uncertain. Authoritative state refreshed; inspect the request ID, fingerprint and state before submitting again. Reason preserved.`,
@@ -469,6 +472,10 @@ function TaskBoard({ data }: { data: Data }) {
                       <dd>{t.worktree_path || "Not created"}</dd>
                     </div>
                   </dl>
+                  <p>
+                    Observable tool calls: {t.tool_calls}/40 · failed attempts:{" "}
+                    {t.retry_count}/3
+                  </p>
                   <h5>Acceptance criteria</h5>
                   <ul>
                     {t.acceptance_criteria.map((c, i) => (
@@ -523,22 +530,11 @@ function TaskBoard({ data }: { data: Data }) {
 }
 function App() {
   const { data, error, socketState, updated, refresh } = useDashboard();
-  const [goal, setGoal] = useState(""),
-    [clipboard, setClipboard] = useState("");
   const [clock, setClock] = useState(Date.now());
   useEffect(() => {
     const timer = setInterval(() => setClock(Date.now()), 10000);
     return () => clearInterval(timer);
   }, []);
-  async function copy() {
-    const prompt = `Use the existing devmesh-bridge pointing to C:\\DevMesh\\mcp_bridge\\devmesh_mcp.py and API http://127.0.0.1:8420. Call get_project_context(doc_name="PROJECT_SPEC.md"), list_open_decisions(), and read_agent_inbox(agent_name="antigravity"). Report actual results. Do not acknowledge messages solely for displaying them. Do not execute tasks, integrations, or approvals. If the inbox is empty, call await_next_task(agent_name="antigravity", timeout_seconds=45) once and report its actual result, then stop. If tools are missing, report that the bridge needs refreshing; do not edit MCP configuration.\n\nTransient operator goal draft (not persisted or an execution instruction):\n${goal || "(No draft entered)"}`;
-    try {
-      await navigator.clipboard.writeText(prompt);
-      setClipboard("Instructions copied to clipboard.");
-    } catch {
-      setClipboard("Clipboard failed. Allow clipboard access and try again.");
-    }
-  }
   return (
     <>
       <Network />
@@ -566,7 +562,7 @@ function App() {
             ))}
           </nav>
           <div className="sidebar-note">
-            <span className="status-dot" /> Milestone 04
+            <span className="status-dot" /> Milestone 05
             <p>
               Observe. Deliberate.
               <br />
@@ -627,25 +623,11 @@ function App() {
             title="The work at a glance"
           >
             <div className="overview-grid">
-              <div>
-                <label>
-                  Project goal · transient draft
-                  <textarea
-                    placeholder="Describe the goal you want to discuss…"
-                    value={goal}
-                    onChange={(e) => setGoal(e.target.value)}
-                  />
-                </label>
-                <p className="muted">
-                  This draft stays in this page only. It does not replace the
-                  project spec or start agents. Execution belongs to Milestone
-                  5.
-                </p>
-                <button onClick={() => void copy()}>
-                  Copy Antigravity instructions ↗
-                </button>
-                <p role="status">{clipboard}</p>
-              </div>
+              <ProjectControls
+                project={data?.projects[0]}
+                disabled={!data || !!error}
+                refresh={refresh}
+              />
               <div className="agents">
                 {["codex", "antigravity"].map((agent) => {
                   const seen = data?.agents.find(
@@ -805,7 +787,7 @@ function App() {
                 <p className="notice">
                   Local operator boundary: identity is unauthenticated. These
                   controls record human resolutions or exact-action decisions;
-                  they never execute integrations.
+                  approving an exact action enables orchestration to run it.
                 </p>
                 <h3>Escalated decisions</h3>
                 {!data.decisions.some((d) => d.state === "ESCALATE") && (

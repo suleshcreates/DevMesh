@@ -1,0 +1,14 @@
+{
+  "results": [
+    "Goal entry starts real persisted project and reaches actual escalation",
+    "Current-project activation clipboard names durable queue and reactivation",
+    "Paused state survives actual API stop/restart and browser reconnect",
+    "Human resolution leaves project paused until explicit revision-bound resume",
+    "Task 1 waits for exact operator approval then executes real tests",
+    "Task 2 waits for exact operator approval then executes real tests",
+    "PROJECT_COMPLETE reflects both actual guarded promotions and test logs"
+  ],
+  "page_errors": [],
+  "boundary": "Injected fake inference; real frontend, API, database, fixture commits, unittest commands and guarded promotion. No real-agent pass.",
+  "fixture_directory": "C:\\Users\\sules\\AppData\\Local\\Temp\\devmesh-m5-browser-uDItPK"
+}

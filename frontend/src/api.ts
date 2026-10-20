@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Data, Snapshot, Decision, Task, Approval } from "./contracts";
+import type {
+  Data,
+  Snapshot,
+  Decision,
+  Task,
+  Approval,
+  Project,
+} from "./contracts";
 import { uniqueMessages } from "./contracts";
 export const API = "http://127.0.0.1:8420";
 export async function request<T>(path: string, body?: unknown): Promise<T> {
@@ -34,14 +41,16 @@ export function useDashboard() {
       do {
         queued.current = false;
         try {
-          const [snapshot, decisions, tasks, approvals] = await Promise.all([
-            request<Snapshot>("/api/dashboard/snapshot"),
-            request<{ decisions: Decision[] }>(
-              "/api/decisions?open_only=false",
-            ),
-            request<{ tasks: Task[] }>("/api/tasks"),
-            request<{ requests: Approval[] }>("/api/approvals"),
-          ]);
+          const [snapshot, decisions, tasks, approvals, projects] =
+            await Promise.all([
+              request<Snapshot>("/api/dashboard/snapshot"),
+              request<{ decisions: Decision[] }>(
+                "/api/decisions?open_only=false",
+              ),
+              request<{ tasks: Task[] }>("/api/tasks"),
+              request<{ requests: Approval[] }>("/api/approvals"),
+              request<{ projects: Project[] }>("/api/projects"),
+            ]);
           if (alive.current) {
             setData({
               ...snapshot,
@@ -49,6 +58,7 @@ export function useDashboard() {
               decisions: decisions.decisions,
               tasks: tasks.tasks,
               approvals: approvals.requests,
+              projects: projects.projects,
             });
             setError("");
             setUpdated(new Date().toLocaleTimeString());

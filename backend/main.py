@@ -4,6 +4,7 @@ from pathlib import Path
 from uuid import UUID
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from fastapi.responses import JSONResponse
 from backend.database import Database
 from backend.models import Agent, MessageCreate, Acknowledgement, poll_timeout
@@ -15,7 +16,7 @@ from backend.memory_manager import MemoryManager
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def create_app(db_path=None, repository=None, test_command=None):
+def create_app(db_path=None, repository=None, test_command=None, *, adapters=None, orchestration_worker=True):
     @asynccontextmanager
     async def lifespan(app):
         app.state.db = Database(db_path or ROOT / ".devmesh" / "devmesh.sqlite3")
@@ -35,9 +36,17 @@ def create_app(db_path=None, repository=None, test_command=None):
         await app.state.runner.recover()
         app.state.memory = MemoryManager(app.state.db, app.state.db.path.parent)
         await app.state.memory.regenerate()
+        from backend.orchestrator import Orchestrator
+        app.state.execution_selected = repository is not None
+        app.state.orchestrator = Orchestrator(app, adapters)
+        await app.state.orchestrator.initialize()
+        worker = asyncio.create_task(app.state.orchestrator.run()) if orchestration_worker else None
         try:
             yield
         finally:
+            if worker is not None:
+                worker.cancel()
+                await asyncio.gather(worker, return_exceptions=True)
             await app.state.db.close()
 
     app = FastAPI(lifespan=lifespan)
@@ -47,6 +56,7 @@ def create_app(db_path=None, repository=None, test_command=None):
     from backend.dashboard_routes import register as register_dashboard
     register_dashboard(app)
 
+    @app.exception_handler(ValidationError)
     @app.exception_handler(RequestValidationError)
     async def validation_error(request, exc):
         # Pydantic errors include input values by default: do not echo them.
@@ -101,6 +111,8 @@ def create_app(db_path=None, repository=None, test_command=None):
     @app.put("/api/context/{doc_name}/source")
     async def source(doc_name: str, request: MemorySource):
         try:
+            if await app.state.orchestrator.list():
+                raise DecisionError(409, 'Project memory is immutable; requirement changes require a new decision workflow and project version')
             await app.state.memory.set_source(doc_name, request.content)
             result = await app.state.memory.context(doc_name)
             await publish("memory.source_updated", result, {"codex", "antigravity", "human"})
@@ -126,6 +138,7 @@ def create_app(db_path=None, repository=None, test_command=None):
         if data is None:
             raise HTTPException(404, "Message not found for recipient")
         if changed:
+            await app.state.orchestrator.observe_ack(message_id, request.agent)
             await publish("message.acknowledged", data, {data["sender"], data["recipient"]})
         return data
 
@@ -175,6 +188,8 @@ def create_app(db_path=None, repository=None, test_command=None):
 
     from backend.task_routes import register
     register(app)
+    from backend.project_routes import register as register_projects
+    register_projects(app)
     return app
 
 import os

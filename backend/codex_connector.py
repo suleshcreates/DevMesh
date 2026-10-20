@@ -10,6 +10,9 @@ from backend.security_guard import redact
 from scripts.spike_codex import discard, shutdown, wait_for_exit
 
 MODEL = "gpt-6-astra"
+# Verified from installed 0.154.0 v2/ItemStartedNotification ThreadItem schemas.
+OBSERVABLE_TOOL_TYPES = {'commandExecution', 'fileChange', 'mcpToolCall', 'dynamicToolCall',
+                         'collabAgentToolCall', 'subAgentActivity', 'webSearch', 'imageView', 'sleep', 'imageGeneration'}
 
 class ConnectorError(RuntimeError):
     def __init__(self, category, uncertain=False):
@@ -27,9 +30,10 @@ class PromptResult:
     cleanup_warnings: list[str] = field(default_factory=list)
 
 class CodexAppServerClient:
-    def __init__(self, cwd=None, timeout=90, codex=None, spawn=None):
+    def __init__(self, cwd=None, timeout=90, codex=None, spawn=None, on_tool=None):
         if not 0 < timeout <= 600:
             raise ValueError("Timeout must be in (0, 600]")
+        self.on_tool = on_tool
         self.cwd = Path(cwd or Path(__file__).resolve().parents[1])
         self.timeout = timeout
         self.codex = codex or shutil.which("codex") or "codex"
@@ -44,7 +48,7 @@ class CodexAppServerClient:
             try:
                 return await self._app_server(redact(prompt), thread_id)
             except ConnectorError as exc:
-                if exc.uncertain or thread_id:
+                if exc.uncertain or thread_id or self.on_tool:
                     raise
                 return await self._exec(redact(prompt))
 
@@ -100,10 +104,13 @@ class CodexAppServerClient:
             # Mark BEFORE writing: even a failed drain may have submitted the prompt.
             started = True
             turn = await request(3, "turn/start", {"threadId": result.thread_id,
+                                "sandboxPolicy": {"type": "readOnly", "networkAccess": False},
+                                "approvalPolicy": "never", "cwd": str(self.cwd),
                                 "input": [{"type": "text", "text": prompt}]})
             result.turn_id = turn["turn"]["id"]
             deltas = {}
             finals = {}
+            observed_tools = set()
             while True:
                 msg = pending.popleft() if pending else await receive()
                 p = msg.get("params", {})
@@ -112,6 +119,14 @@ class CodexAppServerClient:
                 if p.get("turnId", result.turn_id) != result.turn_id:
                     continue
                 method = msg.get("method")
+                if method in ('item/started', 'item/completed') and self.on_tool:
+                    item = p.get('item', {})
+                    if item.get('type') in OBSERVABLE_TOOL_TYPES and item.get('id') not in observed_tools:
+                        if not isinstance(item.get('id'), str) or not item['id']:
+                            raise ConnectorError('missing_tool_event_id', True)
+                        observed_tools.add(item['id'])
+                        await self.on_tool({'thread_id': result.thread_id, 'turn_id': result.turn_id,
+                                            'item_id': item['id'], 'type': item['type']})
                 if method == "item/agentMessage/delta":
                     result.streamed = True
                     key = p.get("itemId", "response")
