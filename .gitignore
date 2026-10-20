@@ -11,3 +11,7 @@ dist/
 docs/codex-schema/
 
 /.worktrees/
+
+frontend/*.tsbuildinfo
+frontend/test-results/
+frontend/playwright-report/

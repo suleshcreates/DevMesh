@@ -1,0 +1,16 @@
+{
+  "verification": "Real browser rendered an isolated online backup of existing SQLite records; copied decisions exactly matched live read-only REST response.",
+  "messages": 19,
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "status": "agreed"
+    },
+    {
+      "id": "DEC-002",
+      "status": "human_resolved"
+    }
+  ],
+  "unexpected_errors": [],
+  "original_mutations": 0
+}

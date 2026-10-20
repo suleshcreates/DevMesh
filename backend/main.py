@@ -41,6 +41,11 @@ def create_app(db_path=None, repository=None, test_command=None):
             await app.state.db.close()
 
     app = FastAPI(lifespan=lifespan)
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(CORSMiddleware, allow_origins=['http://localhost:5173'],
+                       allow_methods=['GET', 'POST'], allow_headers=['Content-Type'])
+    from backend.dashboard_routes import register as register_dashboard
+    register_dashboard(app)
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request, exc):
