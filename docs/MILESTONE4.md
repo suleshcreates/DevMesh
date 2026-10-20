@@ -196,3 +196,15 @@ Both scripts stop only their owned API processes and retain temporary data.
   long-duration performance profiling is not claimed.
 - No browser domain persistence, authenticated security, cross-worker event
   delivery, task state editing, execution controls or later milestone work.
+
+## Normal-backend manual follow-up (20 October 2026)
+
+See [MILESTONE4_MANUAL_VERIFICATION.md](MILESTONE4_MANUAL_VERIFICATION.md).
+User screenshots show the connected overview, persisted conversation history,
+DEC-001 agreed, DEC-002 human_resolved, and the expected empty normal-database
+task/approval views. The user reported reconnect without browser refresh done;
+this is recorded as a user-reported pass, not an independently captured restart
+trace. This supplements the earlier unperformed normal-backend manual check.
+No real approvals, decision resolutions or integrations were executed through
+the UI in this follow-up. Existing automated evidence remains separate; checks
+were not rerun for this documentation-only update. No M5 implementation was added.
