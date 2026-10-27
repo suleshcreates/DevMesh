@@ -3,6 +3,7 @@
 **Two agents. Recorded decisions. Human control.**
 
 [![CI](https://github.com/suleshcreates/DevMesh/actions/workflows/ci.yml/badge.svg?branch=milestone-5)](https://github.com/suleshcreates/DevMesh/actions/workflows/ci.yml)
+[![M8ven Trust Index](https://m8ven.ai/badge/mcp/suleshcreates-devmesh-n9jmq1?v=e464e106c778b346b6afa68e05f76a22)](https://m8ven.ai/mcp/suleshcreates-devmesh-n9jmq1?s=readme)
 
 DevMesh is a Windows-first local workspace for coordinating **Codex** and **Google Antigravity**. It brings durable messaging, structured peer critique, scoped Git worktrees, test gates, and human approvals into one operator dashboard.
 
